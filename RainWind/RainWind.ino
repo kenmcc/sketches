@@ -35,11 +35,10 @@
 
 typedef struct {
            int rain;        // Rainfall
-           int maxRainfallRate; // mm/hour
-           int avgWindSpeed; // km/h
-           int windGustMax; // km/h 
-           byte windDir; // 0-15 clockwise from N
            int supplyV;        // Supply voltage
+           int avgWindSpeed; // km/h  times 100
+           int windGustMax; // km/h  times 100
+           byte windDir; // 0-15 clockwise from N
  } Payload;
 
 Payload tinytx;
@@ -51,7 +50,8 @@ typedef struct RainData{
 }RainData;
 
 typedef struct WindData{
-   double avgSpeed;
+   double avgSpeed; // km/h time 100
+   double maxGust; // km/h tims 100
 }WindData;
 
 
@@ -195,15 +195,15 @@ void wakeUpRain()
 ////
 //////////////////////////////
 
-#define WIND_FACTOR 2.4 // km/h per rotation per sec
+#define WIND_FACTOR 240 // km/h per rotation per sec  x 10
 #define TEST_PAUSE 60000
  
 volatile unsigned long anemRotations=0;
 volatile unsigned long anem_last=0;
 volatile unsigned long anem_min=0xffffffff;
-volatile unsigned long anem_max=0;
+
  
-struct WindData getAvgWindspeed(unsigned long period)
+struct WindData getAvgWindspeed(unsigned long period_in_ms)
 {
   struct WindData data;
   // avg windspeed is (rotations x distance per rotation)/time in hours
@@ -211,15 +211,8 @@ struct WindData getAvgWindspeed(unsigned long period)
   unsigned long reading=anemRotations;
   anemRotations=0;
 
-  Serial.println("reading, period, revpermin");
-  Serial.println(reading);
-  Serial.println(period);
-  
-  // windspeed = num revs / revs/min * 2.4
-  double revPerMin = reading / (period/1000/60);
-  Serial.println(revPerMin);
-  
-  data.avgSpeed = (reading/ revPerMin) * WIND_FACTOR;
+  data.avgSpeed = (WIND_FACTOR*reading)/(period_in_ms/1000);
+  data.maxGust = getGust();
   return data;
 }
  
@@ -227,7 +220,6 @@ double getGust()
 {
   unsigned long reading=anem_min;
   anem_min=0xffffffff;
-  double time=reading/1000000.0;
   return (1/(reading/1000000.0))*WIND_FACTOR;
 }
 
@@ -244,10 +236,6 @@ void wakeUpWind(){
     if(thisTime<anem_min)
     {
       anem_min=thisTime;
-    }
-    if(thisTime > anem_max) // and record the minumum gust 
-    {
-      anem_max = thisTime;
     }
   }
 }
@@ -268,10 +256,10 @@ void loop() {
     tinytx.rain = rd.rainMM; // actually it's 100x mm
     
     WindData wd = getAvgWindspeed(timeDiff);  
-    tinytx.avgWindSpeed = (int)(wd.avgSpeed*100);
+    tinytx.avgWindSpeed = (int)(wd.avgSpeed);
+    tinytx.windGustMax = (int)(wd.maxGust);
     
     tinytx.windDir = 0;
-    tinytx.windGustMax = 0;
       
     tinytx.supplyV = readVcc(); // Get supply voltage
   
