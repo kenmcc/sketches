@@ -19,6 +19,8 @@ MilliTimer timer;
 
 typedef struct {
            int supplyV;        // Supply voltage
+           byte len;
+           byte buf[56];
 } Payload;
 
 Payload tinytx;
@@ -64,20 +66,22 @@ void loop () {
     Serial.print("Have data ");
     Serial.print(len);
     Serial.print(" bytes ");
-    for (int x = 0; x < len; x++)
+    tinytx.len = len + 2;
+    for (int x = 0; x < tinytx.len; x++)
     {
+      tinytx.buf[x] = byte(rf12_buf[x+1]);
       Serial.print(int(rf12_buf[x])); Serial.print(" ");
     }
-    Serial.print("Going to send on \n");
+//    Serial.print("Going to send on \n");
     // switch to outgoing group
-    rf12_initialize(2, OUT_FREQ, OUT_GROUP);
+//    rf12_initialize(2, OUT_FREQ, OUT_GROUP);
     
     // send our packet, once possible
-     while (!rf12_canSend())
-     rf12_recvDone();
-     rf12_sendStart(0, buf, len); 
-     rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
-     
+//     while (!rf12_canSend())
+//     rf12_recvDone();
+//     rf12_sendStart(0, buf, len); 
+//     rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
+
      tinytx.supplyV = readVcc(); // Get supply voltage
      rf12_initialize(9, OUT_FREQ, OUT_GROUP);
 
