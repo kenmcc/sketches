@@ -19,7 +19,7 @@
 ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Sleepy power saving
 
 #define myNodeID 2        // RF12 node ID in the range 1-30
-#define network 100       // RF12 Network group
+#define network 99       // RF12 Network group
 #define freq RF12_433MHZ  // Frequency of RFM12B module
 
 //#define USE_ACK           // Enable ACKs, comment out to disable
@@ -54,9 +54,8 @@ DHT22 myDHT22(DHT22_PIN); // Setup the DHT
 //--------------------------------------------------------------------------------------------------
 // Send payload data via RF
 //-------------------------------------------------------------------------------------------------
- static void rfwrite(int net){
+ static void rfwrite(){
      rf12_sleep(-1);              // Wake up RF module
-     rf12_initialize(myNodeID,freq,net); // Initialize RFM12 with settings defined above 
   
      while (!rf12_canSend())
      rf12_recvDone();
@@ -90,8 +89,6 @@ long readVcc() {
 //########################################################################################################################
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Setup begin");
   pinMode(BMP085_POWER, OUTPUT); // set power pin for BMP085 to output
   pinMode(DHT22_POWER, OUTPUT); // set power pin for BMP085 to output
   
@@ -104,13 +101,13 @@ void setup() {
   digitalWrite(DHT22_POWER, LOW);
   
   rf12_initialize(myNodeID,freq,network); // Initialize RFM12 with settings defined above 
+  rf12_control(0xC623);
   rf12_sleep(0);                          // Put the RFM12 to sleep
    
   PRR = bit(PRTIM1); // only keep timer 0 going
   
   ADCSRA &= ~ bit(ADEN); bitSet(PRR, PRADC); // Disable the ADC to save power
   
-  Serial.println("Setup complete");  
 }
 int lastPressureRead = 0;
 int lastTempRead = 0;
@@ -142,7 +139,7 @@ void loop() {
     int32_t press;
     int16_t thetemp;
     psensor.calculate(thetemp, press);
-    tinytx.pres = (press * 0.01);
+    tinytx.pres = (press / 100);
     tinytx.temp = thetemp * 100;
   
     if(tinytx.pres < lastPressureRead-1)
@@ -187,12 +184,9 @@ void loop() {
 
   tinytx.supplyV = readVcc(); // Get supply voltage
 
-  Serial.println("Sending back data of ");
-  Serial.println( tinytx.pres);
-  Serial.println( tinytx.temp);
   
-  rfwrite(99); // Send data via RF 
-  rfwrite(100);
+  rfwrite(); // Send data via RF 
+
   digitalWrite(BMP085_POWER, LOW); // turn BMP085 sensor off
   digitalWrite(DHT22_POWER, LOW);     // turn DHT11 off
   
