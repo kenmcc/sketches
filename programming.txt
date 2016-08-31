@@ -1,0 +1,43 @@
+Programming Info:
+
+http://www.instructables.com/id/The-Idiots-Guide-to-Programming-AVRs-on-the-Chea/?ALLSTEPS
+
+USBASP top down
++------------------+
+| MOSI o o VCC     |
+|      o o GND     |
+| RST  o o         |
+| SCK  o o         |
+| MISO o o         |
++------------------+
+
+ATTiny 85:
++----------------+
+| RST o^ o VCC   |
+|     o  o SCK   | 
+|     o  o MISO  |
+| GND o  o MOSI  |
++----------------+
+
+
+ATTiny84 
++-----------------+
+| VCC  o^ o GND   |
+|      o  o       | 
+|      o  o       |
+| RST  o  o       |
+|      o  o       |
+|      o  o SCK   |
+| MOSI o  o MISO  |
++-----------------+
+
+
+Connect as above.
+In Ardino choose USBAsp as programmer
+use 'Upload using programmer'
+
+Arduino as ISP:
+flash Arduino as ISP to the arduino - check if need to enable 'old-style-wiring'
+using the wee board, ensure that reset on the arduino is tied high to VCC with a 100 ohm resistor
+Program using 'upload'
+
