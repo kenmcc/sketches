@@ -16,7 +16,7 @@
 #define RF_IN_PIN PIND
 
 // Port that is hooked to LED to indicate a packet has been received
-#define LED_PACKET A2
+#define LED_PACKET 13
 
 #define COUNTER_RATE 3200-1 // 16,000,000Hz / 3200 = 5000 interrupts per second, ie. 200us between interrupts
 // 1 is indicated by 500uS pulse
@@ -27,7 +27,7 @@
 #define IS_LOW_PULSE(interval)  (interval >= 7 && interval <= 8)
 // worst case packet length
 // 6 bytes x 8 bits x (1.5 + 1) = 120ms; 120ms = 200us x 600
-#define HAS_TIMED_OUT(interval) (interval > 600)
+#define HAS_TIMED_OUT(interval) (interval > 1200)
 // we expect 1ms of idle time between pulses
 // so if our pulse hasn't arrived by 1.2ms, reset the wh2_packet_state machine
 // 6 x 200us = 1.2ms
@@ -48,7 +48,7 @@
 volatile byte wh2_flags = 0;
 volatile byte wh2_packet_state = 0;
 volatile int wh2_timeout = 0;
-byte wh2_packet[5];
+byte wh2_packet[11];
 byte wh2_calculated_crc;
 
 ISR(TIMER1_COMPA_vect)
@@ -111,8 +111,8 @@ ISR(TIMER1_COMPA_vect)
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("BetterWH2");
-  
+  Serial.println("Much BetterWH2");
+  delay(100);
   pinMode(LED_PACKET, OUTPUT);
   pinMode(RF_IN, INPUT);
   
@@ -159,11 +159,11 @@ void loop() {
       Serial.print(average_interval, DEC);
       Serial.print(" | ");
        
-      for(i=0;i<5;i++) {
+      for(i=1;i<11;i++) {
         Serial.print("0x");
         Serial.print(wh2_packet[i], HEX);
-        Serial.print("/");
-        Serial.print(wh2_packet[i], DEC);
+        //Serial.print("/");
+        //Serial.print(wh2_packet[i], DEC);
         Serial.print(" ");
       }  
       Serial.print("| Sensor ID: 0x");
@@ -204,15 +204,16 @@ boolean wh2_accept()
      }
      // check if we have a valid start of frame
      // xxxxx110
-     if ((history & B00000111) == B00000110) {
+     if ((history & B11111111) == B11111111) {
        // need to clear packet, and counters
        packet_no = 0;
        // start at 1 becuase only need to acquire 7 bits for first packet byte.
        bit_no = 1;
-       wh2_packet[0] = wh2_packet[1] = wh2_packet[2] = wh2_packet[3] = wh2_packet[4] = 0;
+       wh2_packet[0] = wh2_packet[1] = wh2_packet[2] = wh2_packet[3] = wh2_packet[4] = 0xDE;
        // we've acquired the preamble
        wh2_packet_state = 2;
     }
+    
     return false;
   }
   // acquire packet
@@ -229,7 +230,7 @@ boolean wh2_accept()
       packet_no ++;
     }
 
-    if (packet_no > 4) {
+    if (packet_no > 10) {
       // start the sampling process from scratch
       wh2_packet_state = 0;
       // clear wh2_timeout
@@ -243,33 +244,32 @@ boolean wh2_accept()
 
 void wh2_calculate_crc()
 {
-  wh2_calculated_crc = crc8(wh2_packet, 4);
+  wh2_calculated_crc = crc8(wh2_packet+1, 9);
+  Serial.print("CRC : ");Serial.println(wh2_calculated_crc);
 }
 
 bool wh2_valid()
 {
-  return (wh2_calculated_crc == wh2_packet[4]);
+  return (wh2_calculated_crc == wh2_packet[10]);
 }
 
 int wh2_sensor_id()
 {
-  return (wh2_packet[0] << 4) + (wh2_packet[1] >> 4);
+  return ((int)wh2_packet[1] << 4) + (wh2_packet[2] >> 4);
 }
 
 byte wh2_humidity()
 {
-  return wh2_packet[3];
+  return wh2_packet[4];
 }
 
 /* Temperature in deci-degrees. e.g. 251 = 25.1 */
 int wh2_temperature()
 {
   int temperature;
-  temperature = ((wh2_packet[1] & B00000111) << 8) + wh2_packet[2];
+  temperature = (((int)wh2_packet[2] & 0xF) << 8) + wh2_packet[3];
   // make negative
-  if (wh2_packet[1] & B00001000) {
-    temperature = -temperature;
-  }
+  temperature -= 0x190;
   return temperature;
 }
 
