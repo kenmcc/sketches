@@ -1,11 +1,8 @@
-BetterWH2
-=========
+=======
+emoncms
+=======
+A bunch of RFM12B based nodes scattered around the house giving real-time data on temperature and weather.
 
-An improved Arduino sketch for decoding packets from the WH2 outdoor temperature and humidity sensor from Fine Offset Electronics.
+One of them can turn on and off the electric radiator in my baby daughters room using RF433 
 
-Created by Luc Small on 19 July 2013.
-Released into the public domain.
-
-This code contains a CRC-8 function adapted from the Arduino OneWire library:
- http://www.pjrc.com/teensy/td_libs_OneWire.html
- Thanks go to the authors of that project.
+Python Script runs on Raspberry Pi and gets the data from the nodes, also using an RFM12b and interprets them
