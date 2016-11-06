@@ -15,7 +15,7 @@ void setup() {
   
   pinMode(0, OUTPUT);
   // Transmitter is connected to Arduino Pin #10  
-  mySwitch.enableTransmit(0);
+  mySwitch.enableTransmit(0); // ESP8266 = GPIO0
 
   // Optional set pulse length.
   // mySwitch.setPulseLength(320);
